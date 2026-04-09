@@ -1,4 +1,5 @@
 {
+  "name": "shiva_godmode_overload",
   "routes": [
     { "src": "/api/status", "dest": "/api/status" },
     { "src": "/api/trades", "dest": "/api/trades" },
