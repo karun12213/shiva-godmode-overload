@@ -1,0 +1,8 @@
+{
+  "routes": [
+    { "src": "/api/status", "dest": "/api/status" },
+    { "src": "/api/trades", "dest": "/api/trades" },
+    { "src": "/api/log", "dest": "/api/log" },
+    { "src": "/api/config", "dest": "/api/config" }
+  ]
+}

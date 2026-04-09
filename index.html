@@ -1,0 +1,389 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SHIVA Admin — Vercel</title>
+    <style>
+        :root {
+            --bg: #0a0a0a; --card: #141414; --border: #222; --text: #e0e0e0;
+            --green: #00ff88; --red: #ff4444; --orange: #ffaa00; --blue: #4488ff;
+            --muted: #555; --hover: #1a1a1a;
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'SF Mono', 'Fira Code', 'Consolas', monospace; background: var(--bg); color: var(--text); min-height: 100vh; }
+
+        .header { background: var(--card); border-bottom: 1px solid var(--border); padding: 12px 24px; display: flex; align-items: center; justify-content: space-between; position: sticky; top: 0; z-index: 100; }
+        .header h1 { font-size: 18px; color: var(--green); }
+        .header .badge { font-size: 10px; background: #222; color: var(--muted); padding: 2px 8px; border-radius: 3px; margin-left: 8px; }
+        .status-bar { display: flex; gap: 16px; align-items: center; }
+        .status-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--red); }
+        .status-dot.online { background: var(--green); box-shadow: 0 0 8px var(--green); }
+        .status-text { font-size: 11px; color: var(--muted); }
+        .last-sync { font-size: 10px; color: var(--muted); }
+
+        .container { max-width: 1400px; margin: 0 auto; padding: 20px; }
+        .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 16px; margin-bottom: 20px; }
+
+        .card { background: var(--card); border: 1px solid var(--border); border-radius: 8px; padding: 16px; }
+        .card h2 { font-size: 12px; color: var(--muted); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 12px; display: flex; align-items: center; gap: 6px; }
+        .stat { display: flex; justify-content: space-between; align-items: center; padding: 8px 0; border-bottom: 1px solid var(--border); }
+        .stat:last-child { border-bottom: none; }
+        .stat-label { color: var(--muted); font-size: 12px; }
+        .stat-value { font-weight: bold; font-size: 14px; }
+        .stat-value.green { color: var(--green); }
+        .stat-value.red { color: var(--red); }
+        .stat-value.orange { color: var(--orange); }
+        .stat-value.blue { color: var(--blue); }
+
+        .pnl-display { font-size: 32px; font-weight: bold; text-align: center; padding: 20px 0; }
+        .pnl-display.green { color: var(--green); }
+        .pnl-display.red { color: var(--red); }
+
+        .consensus-badge { display: inline-block; padding: 6px 16px; border-radius: 6px; font-weight: bold; font-size: 16px; }
+        .consensus-badge.buy { background: #003322; color: var(--green); border: 1px solid var(--green); }
+        .consensus-badge.sell { background: #330000; color: var(--red); border: 1px solid var(--red); }
+        .consensus-badge.hold { background: #332200; color: var(--orange); border: 1px solid var(--orange); }
+
+        .agents-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 6px; }
+        .agent { padding: 6px 8px; border-radius: 4px; font-size: 11px; display: flex; align-items: center; gap: 4px; background: #111; border-left: 2px solid var(--border); }
+        .agent.buy { border-left-color: var(--green); background: #0a1a12; }
+        .agent.sell { border-left-color: var(--red); background: #1a0a0a; }
+        .agent .signal { font-weight: bold; margin-left: auto; font-size: 10px; }
+        .agent .signal.buy { color: var(--green); }
+        .agent .signal.sell { color: var(--red); }
+
+        .tabs { display: flex; gap: 4px; margin-bottom: 16px; border-bottom: 1px solid var(--border); }
+        .tab { padding: 10px 16px; cursor: pointer; border-bottom: 2px solid transparent; color: var(--muted); font-size: 13px; transition: all 0.2s; }
+        .tab:hover { color: var(--text); }
+        .tab.active { color: var(--green); border-bottom-color: var(--green); }
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
+
+        table { width: 100%; border-collapse: collapse; font-size: 12px; }
+        th { text-align: left; padding: 8px; color: var(--muted); border-bottom: 1px solid var(--border); font-weight: normal; text-transform: uppercase; font-size: 10px; }
+        td { padding: 8px; border-bottom: 1px solid var(--border); }
+        tr:hover td { background: var(--hover); }
+        .badge-pill { padding: 2px 8px; border-radius: 10px; font-size: 10px; font-weight: bold; }
+        .badge-pill.win { background: #003322; color: var(--green); }
+        .badge-pill.loss { background: #330000; color: var(--red); }
+
+        .log-viewer { background: #050505; border: 1px solid var(--border); border-radius: 6px; padding: 12px; font-size: 11px; line-height: 1.6; max-height: 500px; overflow-y: auto; white-space: pre-wrap; word-break: break-all; }
+
+        .no-data { text-align: center; padding: 40px; color: var(--muted); }
+        .no-data .icon { font-size: 32px; margin-bottom: 12px; }
+
+        @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.4; } }
+        .loading { animation: pulse 1.5s ease-in-out infinite; }
+
+        @media (max-width: 768px) {
+            .container { padding: 12px; }
+            .grid { grid-template-columns: 1fr; }
+            .agents-grid { grid-template-columns: repeat(auto-fill, minmax(110px, 1fr)); }
+            .header { padding: 12px 16px; }
+            .header h1 { font-size: 16px; }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div style="display:flex;align-items:center;gap:8px;">
+            <h1>🔱 SHIVA Admin</h1>
+            <span class="badge">VERCEL</span>
+        </div>
+        <div class="status-bar">
+            <span class="last-sync" id="lastSync">Never synced</span>
+            <span class="status-dot" id="statusDot"></span>
+            <span class="status-text" id="statusText">Offline</span>
+        </div>
+    </div>
+
+    <div class="container">
+        <div class="tabs">
+            <div class="tab active" data-tab="dashboard">📊 Dashboard</div>
+            <div class="tab" data-tab="agents">🤖 Agents</div>
+            <div class="tab" data-tab="trades">📝 Trades</div>
+            <div class="tab" data-tab="log">📜 Log</div>
+        </div>
+
+        <!-- Dashboard -->
+        <div class="tab-content active" id="tab-dashboard">
+            <div class="grid">
+                <div class="card">
+                    <h2>💰 Equity & PnL</h2>
+                    <div class="pnl-display" id="pnlDisplay">$0.00</div>
+                    <div class="stat">
+                        <span class="stat-label">Equity</span>
+                        <span class="stat-value" id="equity">$0.00</span>
+                    </div>
+                    <div class="stat">
+                        <span class="stat-label">Balance</span>
+                        <span class="stat-value" id="balance">$0.00</span>
+                    </div>
+                    <div class="stat">
+                        <span class="stat-label">PnL %</span>
+                        <span class="stat-value" id="pnlPct">0.00%</span>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <h2>💹 Market</h2>
+                    <div class="stat">
+                        <span class="stat-label">Price</span>
+                        <span class="stat-value" id="price">$0.000</span>
+                    </div>
+                    <div class="stat">
+                        <span class="stat-label">Symbol</span>
+                        <span class="stat-value" id="symbol">—</span>
+                    </div>
+                    <div class="stat">
+                        <span class="stat-label">Lot Size</span>
+                        <span class="stat-value" id="lotSize">—</span>
+                    </div>
+                    <div class="stat">
+                        <span class="stat-label">Positions</span>
+                        <span class="stat-value" id="positions">0/6</span>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <h2>📊 Statistics</h2>
+                    <div class="stat">
+                        <span class="stat-label">Cycle</span>
+                        <span class="stat-value" id="cycle">—</span>
+                    </div>
+                    <div class="stat">
+                        <span class="stat-label">Total Trades</span>
+                        <span class="stat-value" id="totalTrades">0</span>
+                    </div>
+                    <div class="stat">
+                        <span class="stat-label">Wins / Losses</span>
+                        <span class="stat-value" id="winLoss">0 / 0</span>
+                    </div>
+                    <div class="stat">
+                        <span class="stat-label">Last Update</span>
+                        <span class="stat-value" id="lastUpdate" style="font-size:10px;">—</span>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <h2>🤖 AI Consensus</h2>
+                    <div style="text-align:center; padding: 16px 0;">
+                        <span class="consensus-badge" id="consensusBadge">HOLD</span>
+                        <div style="margin-top:10px; font-size:13px; color:var(--muted);" id="consensusPct">0%</div>
+                    </div>
+                    <div class="stat">
+                        <span class="stat-label">🟢 BUY</span>
+                        <span class="stat-value green" id="buyCount">0</span>
+                    </div>
+                    <div class="stat">
+                        <span class="stat-label">🔴 SELL</span>
+                        <span class="stat-value red" id="sellCount">0</span>
+                    </div>
+                    <div class="stat">
+                        <span class="stat-label">⚪ HOLD</span>
+                        <span class="stat-value orange" id="holdCount">0</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Agents -->
+        <div class="tab-content" id="tab-agents">
+            <div class="card">
+                <h2>40 NVIDIA Agents — Latest Signals</h2>
+                <div class="agents-grid" id="agentsGrid">
+                    <div class="no-data" style="grid-column: 1/-1;">
+                        <div class="icon">🤖</div>
+                        <div>Waiting for data from trading bot...</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Trades -->
+        <div class="tab-content" id="tab-trades">
+            <div class="card">
+                <h2>Trade History</h2>
+                <div style="overflow-x: auto;">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Trade ID</th>
+                                <th>Signal</th>
+                                <th>Entry</th>
+                                <th>Exit</th>
+                                <th>PnL</th>
+                                <th>Result</th>
+                                <th>Reason</th>
+                                <th>Time</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tradesBody">
+                            <tr><td colspan="8" class="no-data">No trades yet.</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- Log -->
+        <div class="tab-content" id="tab-log">
+            <div class="card">
+                <h2>Live Log <button onclick="loadLog()" style="margin-left:12px; padding:4px 12px; background:#222; border:1px solid #333; color:#888; border-radius:4px; cursor:pointer; font-family:inherit; font-size:11px;">↻ Refresh</button></h2>
+                <div class="log-viewer" id="logViewer">Loading log...</div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // ============ CONFIG ============
+        const API_BASE = window.location.origin; // Same origin on Vercel
+
+        // ============ TABS ============
+        document.querySelectorAll('.tab').forEach(tab => {
+            tab.addEventListener('click', () => {
+                document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+                document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+                tab.classList.add('active');
+                document.getElementById('tab-' + tab.dataset.tab).classList.add('active');
+            });
+        });
+
+        // ============ FETCH STATUS ============
+        async function fetchStatus() {
+            try {
+                const res = await fetch(API_BASE + '/api/status');
+                const data = await res.json();
+
+                if (data.status === 'no_data') {
+                    document.getElementById('statusDot').classList.remove('online');
+                    document.getElementById('statusText').textContent = 'No Data';
+                    document.getElementById('lastSync').textContent = 'Run sync script on Mac';
+                    return;
+                }
+
+                updateDashboard(data);
+
+                // Update status
+                document.getElementById('statusDot').classList.add('online');
+                document.getElementById('statusText').textContent = 'Live';
+                const syncTime = data.server_timestamp ? new Date(data.server_timestamp).toLocaleTimeString() : '';
+                document.getElementById('lastSync').textContent = syncTime ? 'Synced ' + syncTime : 'Live';
+
+            } catch (e) {
+                document.getElementById('statusDot').classList.remove('online');
+                document.getElementById('statusText').textContent = 'Error';
+            }
+        }
+
+        // ============ FETCH TRADES ============
+        async function fetchTrades() {
+            try {
+                const res = await fetch(API_BASE + '/api/trades');
+                const trades = await res.json();
+                updateTrades(trades);
+            } catch (e) {}
+        }
+
+        // ============ FETCH LOG ============
+        async function loadLog() {
+            try {
+                const res = await fetch(API_BASE + '/api/log');
+                const data = await res.json();
+                const viewer = document.getElementById('logViewer');
+                viewer.textContent = data.log || 'No log data yet. Run the sync script on your Mac.';
+                viewer.scrollTop = viewer.scrollHeight;
+            } catch (e) {
+                document.getElementById('logViewer').textContent = 'Failed to load log.';
+            }
+        }
+
+        // ============ UPDATE DASHBOARD ============
+        function updateDashboard(data) {
+            const pnl = data.pnl || 0;
+            const pnlPct = data.pnl_pct || 0;
+            const pnlClass = pnl >= 0 ? 'green' : 'red';
+
+            document.getElementById('equity').textContent = fmtCurrency(data.equity || 0);
+            document.getElementById('balance').textContent = fmtCurrency(data.balance || 0);
+
+            const pnlEl = document.getElementById('pnlDisplay');
+            pnlEl.textContent = (pnl >= 0 ? '+' : '') + fmtCurrency(pnl);
+            pnlEl.className = 'pnl-display ' + pnlClass;
+
+            document.getElementById('pnlPct').textContent = (pnl >= 0 ? '+' : '') + pnlPct.toFixed(2) + '%';
+            document.getElementById('pnlPct').className = 'stat-value ' + pnlClass;
+
+            document.getElementById('price').textContent = '$' + (data.price || 0).toLocaleString('en-US', {minimumFractionDigits: 3});
+            document.getElementById('symbol').textContent = data.symbol || '—';
+            document.getElementById('lotSize').textContent = data.lot_size || '—';
+            document.getElementById('positions').textContent = (data.open_positions || 0) + '/' + (data.max_positions || 6);
+
+            document.getElementById('cycle').textContent = data.cycle || '—';
+            document.getElementById('totalTrades').textContent = data.total_trades || 0;
+            document.getElementById('winLoss').textContent = (data.wins || 0) + ' / ' + (data.losses || 0);
+            document.getElementById('lastUpdate').textContent = data.timestamp || '—';
+
+            // Consensus
+            const consensus = (data.consensus || 'HOLD').toUpperCase();
+            const badge = document.getElementById('consensusBadge');
+            badge.textContent = consensus;
+            badge.className = 'consensus-badge ' + consensus.toLowerCase();
+            document.getElementById('consensusPct').textContent = (data.consensus_pct || 0) + '%';
+            document.getElementById('buyCount').textContent = data.buy_count || 0;
+            document.getElementById('sellCount').textContent = data.sell_count || 0;
+            document.getElementById('holdCount').textContent = data.hold_count || 0;
+
+            // Agents
+            const agents = data.agents || [];
+            if (agents.length > 0) {
+                const grid = document.getElementById('agentsGrid');
+                grid.innerHTML = agents.map(a => `
+                    <div class="agent ${a.signal.toLowerCase()}">
+                        <span>${a.emoji}</span>
+                        <span style="flex:1;overflow:hidden;text-overflow:ellipsis;">${a.name}</span>
+                        <span class="signal ${a.signal.toLowerCase()}">${a.signal}</span>
+                    </div>
+                `).join('');
+            }
+        }
+
+        // ============ UPDATE TRADES ============
+        function updateTrades(trades) {
+            const tbody = document.getElementById('tradesBody');
+            if (!trades || trades.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="8" class="no-data">No trades yet.</td></tr>';
+                return;
+            }
+            tbody.innerHTML = trades.slice().reverse().map(t => {
+                const pnlClass = t.result === 'win' ? 'win' : 'loss';
+                const pnlStr = (t.pnl >= 0 ? '+' : '') + '$' + Math.abs(t.pnl || 0).toFixed(2);
+                return `<tr>
+                    <td style="font-size:10px;">${(t.id || '').slice(0, 16)}...</td>
+                    <td>${t.signal || '—'}</td>
+                    <td>$${(t.entry_price || 0).toFixed(2)}</td>
+                    <td>$${(t.exit_price || 0).toFixed(2)}</td>
+                    <td class="stat-value ${t.pnl >= 0 ? 'green' : 'red'}">${pnlStr}</td>
+                    <td><span class="badge-pill ${pnlClass}">${(t.result || '').toUpperCase()}</span></td>
+                    <td style="font-size:11px;">${t.exit_reason || '—'}</td>
+                    <td style="font-size:10px;">${(t.time || '').slice(0, 16)}</td>
+                </tr>`;
+            }).join('');
+        }
+
+        function fmtCurrency(n) {
+            return '$' + Math.abs(n).toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2});
+        }
+
+        // ============ INIT ============
+        fetchStatus();
+        fetchTrades();
+        loadLog();
+
+        // Auto-refresh
+        setInterval(fetchStatus, 15000);
+        setInterval(fetchTrades, 60000);
+    </script>
+</body>
+</html>

@@ -1,0 +1,43 @@
+"""SHIVA Trades API — in-memory storage."""
+import json
+from http.server import BaseHTTPRequestHandler
+
+_store = {}
+
+
+class handler(BaseHTTPRequestHandler):
+    def do_GET(self):
+        trades = _store.get("trades", [])
+        self.send_response(200)
+        self.send_header('Content-type', 'application/json')
+        self.send_header('Access-Control-Allow-Origin', '*')
+        self.end_headers()
+        self.wfile.write(json.dumps(trades).encode())
+
+    def do_POST(self):
+        content_length = int(self.headers.get('Content-Length', 0))
+        body = self.rfile.read(content_length)
+        try:
+            trades = json.loads(body.decode())
+        except json.JSONDecodeError:
+            self.send_response(400)
+            self.send_header('Content-type', 'application/json')
+            self.end_headers()
+            self.wfile.write(json.dumps({"error": "Invalid JSON"}).encode())
+            return
+        _store["trades"] = trades[-200:]
+        self.send_response(200)
+        self.send_header('Content-type', 'application/json')
+        self.send_header('Access-Control-Allow-Origin', '*')
+        self.end_headers()
+        self.wfile.write(json.dumps({"status": "ok", "count": len(trades)}).encode())
+
+    def do_OPTIONS(self):
+        self.send_response(200)
+        self.send_header('Access-Control-Allow-Origin', '*')
+        self.send_header('Access-Control-Allow-Methods', 'GET, POST, OPTIONS')
+        self.send_header('Access-Control-Allow-Headers', 'Content-Type')
+        self.end_headers()
+
+    def log_message(self, format, *args):
+        pass
