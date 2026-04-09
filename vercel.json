@@ -1,9 +1,16 @@
 {
   "name": "shiva_godmode_overload",
+  "builds": [
+    {
+      "src": "api/*.py",
+      "use": "@vercel/python"
+    }
+  ],
   "routes": [
-    { "src": "/api/status", "dest": "/api/status" },
-    { "src": "/api/trades", "dest": "/api/trades" },
-    { "src": "/api/log", "dest": "/api/log" },
-    { "src": "/api/config", "dest": "/api/config" }
+    { "src": "/api/status", "dest": "/api/status.py" },
+    { "src": "/api/trades", "dest": "/api/trades.py" },
+    { "src": "/api/log", "dest": "/api/log.py" },
+    { "src": "/api/config", "dest": "/api/config.py" },
+    { "src": "/(.*)", "dest": "/index.html" }
   ]
 }
