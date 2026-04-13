@@ -237,6 +237,12 @@
                     <div class="no-data" style="grid-column:1/-1;"><div class="icon">🤖</div><div>Waiting for agent data...</div></div>
                 </div>
             </div>
+
+            <!-- Agent Decision Terminal -->
+            <div class="card" style="margin-top:16px;">
+                <h2>💬 Agent Decision Terminal</h2>
+                <div class="log-viewer" id="agentTerminal" style="max-height:600px;font-size:11px;line-height:1.7;"></div>
+            </div>
         </div>
 
         <!-- Trades -->
@@ -344,6 +350,23 @@
                 const data = await res.json();
                 if (!data || !data.agents || data.agents.length === 0) return;
                 updateAgentDashboard(data);
+                updateAgentTerminal(data);
+            } catch (e) {}
+        }
+
+        // ============ FETCH BOT LOGS ============
+        let lastLogCount = 0;
+        async function fetchBotLogs() {
+            try {
+                const res = await fetch(API_BASE + '/api/log');
+                const data = await res.json();
+                if (data && data.log) {
+                    const terminal = document.getElementById('agentTerminal');
+                    if (terminal) {
+                        terminal.textContent = data.log;
+                        terminal.scrollTop = terminal.scrollHeight;
+                    }
+                }
             } catch (e) {}
         }
 
@@ -404,6 +427,61 @@
                     </div>
                 `).join('');
             }
+        }
+
+        // ============ UPDATE AGENT TERMINAL ============
+        function updateAgentTerminal(data) {
+            const terminal = document.getElementById('agentTerminal');
+            if (!terminal) return;
+
+            const ict = data.ict || {};
+            const cons = data.consensus || {};
+            const ml = data.ml || {};
+            const news = data.news || {};
+            const final = data.final || {};
+            const agents = data.agents || [];
+
+            // Get top BUY and SELL agents
+            const buyAgents = agents.filter(a => a.signal === 'BUY');
+            const sellAgents = agents.filter(a => a.signal === 'SELL');
+            const holdAgents = agents.filter(a => a.signal === 'HOLD');
+
+            let html = '';
+            html += `═══════════════════════════════════════════════\n`;
+            html += `  🔱 SHIVA GODMODE — Agent Decision Engine\n`;
+            html += `  Cycle #${data.cycle || '?'} | Price: $${data.price || '?'} | Spread: $${data.spread || '?'}\n`;
+            html += `═══════════════════════════════════════════════\n\n`;
+
+            html += `📊 ICT ANALYSIS\n`;
+            html += `   Signal: ${ict.signal || '—'} | Confidence: ${ict.confidence ?? '—'}%\n`;
+            html += `   Phase: ${ict.phase || '—'} | IFVGs: ${ict.ifvgs ?? '—'}\n\n`;
+
+            html += `🤖 40 AGENT VOTES\n`;
+            html += `   🟢 BUY:  ${buyAgents.length}  🔴 SELL: ${sellAgents.length}  ⚪ HOLD: ${holdAgents.length}\n`;
+            html += `   Consensus: ${cons.signal || '—'} (${cons.pct ?? '—'}%)\n\n`;
+
+            if (buyAgents.length > 0) {
+                html += `   BUY agents: ${buyAgents.map(a => `${a.emoji}${a.n}`).join(', ')}\n`;
+            }
+            if (sellAgents.length > 0) {
+                html += `   SELL agents: ${sellAgents.map(a => `${a.emoji}${a.n}`).join(', ')}\n`;
+            }
+            html += `\n`;
+
+            html += `🧠 ML PREDICTION\n`;
+            html += `   Signal: ${ml.signal || '—'} | Confidence: ${ml.confidence != null ? (ml.confidence*100).toFixed(0)+'%' : '—'}\n`;
+            html += `   Note: ${ml.note || '—'}\n\n`;
+
+            html += `📰 NEWS & CALENDAR\n`;
+            html += `   Recommendation: ${news.recommendation || '—'}\n`;
+            html += `   Sentiment: ${news.sentiment > 0 ? 'Bullish' : news.sentiment < 0 ? 'Bearish' : 'Neutral'}\n`;
+            html += `   Articles: ${news.count ?? '—'}\n\n`;
+
+            html += `═══════════════════════════════════════════════\n`;
+            html += `   🎯 FINAL DECISION: ${final.signal || '—'} (${final.confidence ?? '—'}%)\n`;
+            html += `═══════════════════════════════════════════════\n`;
+
+            terminal.textContent = html;
         }
 
         // ============ UPDATE DASHBOARD ============
@@ -487,12 +565,14 @@
         fetchStatus();
         fetchTrades();
         fetchAgents();
+        fetchBotLogs();
         loadLog();
 
         // Auto-refresh
         setInterval(fetchStatus, 15000);
         setInterval(fetchTrades, 60000);
         setInterval(fetchAgents, 30000);
+        setInterval(fetchBotLogs, 10000);
     </script>
 </body>
 </html>
