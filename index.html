@@ -190,13 +190,51 @@
 
         <!-- Agents -->
         <div class="tab-content" id="tab-agents">
+            <!-- Decision Engine -->
+            <div class="grid" style="margin-bottom:16px;">
+                <div class="card">
+                    <h2>🧠 ICT Analysis</h2>
+                    <div class="stat"><span class="stat-label">Signal</span><span class="stat-value" id="ictSignal">—</span></div>
+                    <div class="stat"><span class="stat-label">Confidence</span><span class="stat-value" id="ictConf">—</span></div>
+                    <div class="stat"><span class="stat-label">Phase</span><span class="stat-value" id="ictPhase">—</span></div>
+                    <div class="stat"><span class="stat-label">IFVGs</span><span class="stat-value" id="ictIFVGs">—</span></div>
+                </div>
+                <div class="card">
+                    <h2>🤖 ML Prediction</h2>
+                    <div class="stat"><span class="stat-label">Signal</span><span class="stat-value" id="mlSignal">—</span></div>
+                    <div class="stat"><span class="stat-label">Confidence</span><span class="stat-value" id="mlConf">—</span></div>
+                    <div class="stat"><span class="stat-label">Note</span><span class="stat-value" style="font-size:10px;" id="mlNote">—</span></div>
+                </div>
+                <div class="card">
+                    <h2>📰 News Filter</h2>
+                    <div class="stat"><span class="stat-label">Recommendation</span><span class="stat-value" id="newsRec">—</span></div>
+                    <div class="stat"><span class="stat-label">Sentiment</span><span class="stat-value" id="newsSent">—</span></div>
+                    <div class="stat"><span class="stat-label">Articles</span><span class="stat-value" id="newsCount">—</span></div>
+                </div>
+                <div class="card">
+                    <h2>🎯 Final Decision</h2>
+                    <div style="text-align:center;padding:12px 0;"><span class="consensus-badge" id="finalBadge">—</span></div>
+                    <div class="stat"><span class="stat-label">Confidence</span><span class="stat-value" id="finalConf">—</span></div>
+                    <div class="stat"><span class="stat-label">Price</span><span class="stat-value" id="agentPrice">—</span></div>
+                    <div class="stat"><span class="stat-label">Spread</span><span class="stat-value" id="agentSpread">—</span></div>
+                </div>
+            </div>
+
+            <!-- Consensus Breakdown -->
+            <div class="card" style="margin-bottom:16px;">
+                <h2>📊 Consensus</h2>
+                <div style="display:flex;gap:24px;justify-content:center;padding:12px 0;">
+                    <span style="color:var(--green);">🟢 BUY: <b id="consBuy">0</b></span>
+                    <span style="color:var(--red);">🔴 SELL: <b id="consSell">0</b></span>
+                    <span style="color:var(--orange);">⚪ HOLD: <b id="consHold">0</b></span>
+                </div>
+            </div>
+
+            <!-- 40 Agents -->
             <div class="card">
-                <h2>40 NVIDIA Agents — Latest Signals</h2>
+                <h2>40 Agents — Latest Signals</h2>
                 <div class="agents-grid" id="agentsGrid">
-                    <div class="no-data" style="grid-column: 1/-1;">
-                        <div class="icon">🤖</div>
-                        <div>Waiting for data from trading bot...</div>
-                    </div>
+                    <div class="no-data" style="grid-column:1/-1;"><div class="icon">🤖</div><div>Waiting for agent data...</div></div>
                 </div>
             </div>
         </div>
@@ -299,6 +337,75 @@
             }
         }
 
+        // ============ FETCH AGENTS ============
+        async function fetchAgents() {
+            try {
+                const res = await fetch(API_BASE + '/api/agents');
+                const data = await res.json();
+                if (!data || !data.agents || data.agents.length === 0) return;
+                updateAgentDashboard(data);
+            } catch (e) {}
+        }
+
+        // ============ UPDATE AGENT DASHBOARD ============
+        function updateAgentDashboard(data) {
+            // ICT
+            const ict = data.ict || {};
+            const ictSig = document.getElementById('ictSignal');
+            ictSig.textContent = ict.signal || '—';
+            ictSig.className = 'stat-value ' + ((ict.signal||'').toLowerCase() === 'buy' ? 'green' : (ict.signal||'').toLowerCase() === 'sell' ? 'red' : 'orange');
+            document.getElementById('ictConf').textContent = ict.confidence != null ? ict.confidence + '%' : '—';
+            document.getElementById('ictPhase').textContent = ict.phase || '—';
+            document.getElementById('ictIFVGs').textContent = ict.ifvgs ?? '—';
+
+            // ML
+            const ml = data.ml || {};
+            const mlSig = document.getElementById('mlSignal');
+            mlSig.textContent = ml.signal || '—';
+            mlSig.className = 'stat-value ' + ((ml.signal||'').toLowerCase() === 'buy' ? 'green' : (ml.signal||'').toLowerCase() === 'sell' ? 'red' : 'orange');
+            document.getElementById('mlConf').textContent = ml.confidence != null ? (ml.confidence * 100).toFixed(0) + '%' : '—';
+            document.getElementById('mlNote').textContent = ml.note || '—';
+
+            // News
+            const news = data.news || {};
+            const newsRec = document.getElementById('newsRec');
+            newsRec.textContent = news.recommendation || '—';
+            newsRec.className = 'stat-value ' + ((news.recommendation||'').toUpperCase() === 'TRADE' ? 'green' : 'red');
+            const sent = news.sentiment || 0;
+            const sentEl = document.getElementById('newsSent');
+            sentEl.textContent = sent > 0 ? 'Bullish' : sent < 0 ? 'Bearish' : 'Neutral';
+            sentEl.className = 'stat-value ' + (sent > 0 ? 'green' : sent < 0 ? 'red' : 'orange');
+            document.getElementById('newsCount').textContent = news.count ?? '—';
+
+            // Final Decision
+            const final = data.final || {};
+            const badge = document.getElementById('finalBadge');
+            badge.textContent = final.signal || '—';
+            badge.className = 'consensus-badge ' + ((final.signal||'').toLowerCase() || 'hold');
+            document.getElementById('finalConf').textContent = final.confidence != null ? final.confidence + '%' : '—';
+            document.getElementById('agentPrice').textContent = data.price ? '$' + data.price : '—';
+            document.getElementById('agentSpread').textContent = data.spread ? '$' + data.spread : '—';
+
+            // Consensus
+            const cons = data.consensus || {};
+            document.getElementById('consBuy').textContent = cons.buy ?? 0;
+            document.getElementById('consSell').textContent = cons.sell ?? 0;
+            document.getElementById('consHold').textContent = cons.hold ?? 0;
+
+            // 40 Agents Grid
+            const agents = data.agents || [];
+            if (agents.length > 0) {
+                const grid = document.getElementById('agentsGrid');
+                grid.innerHTML = agents.map(a => `
+                    <div class="agent ${(a.signal||'').toLowerCase()}">
+                        <span>${a.emoji}</span>
+                        <span style="flex:1;overflow:hidden;text-overflow:ellipsis;" title="${a.name}">${a.name}</span>
+                        <span class="signal ${(a.signal||'').toLowerCase()}">${a.signal}</span>
+                    </div>
+                `).join('');
+            }
+        }
+
         // ============ UPDATE DASHBOARD ============
         function updateDashboard(data) {
             const pnl = data.pnl || 0;
@@ -379,11 +486,13 @@
         // ============ INIT ============
         fetchStatus();
         fetchTrades();
+        fetchAgents();
         loadLog();
 
         // Auto-refresh
         setInterval(fetchStatus, 15000);
         setInterval(fetchTrades, 60000);
+        setInterval(fetchAgents, 30000);
     </script>
 </body>
 </html>
