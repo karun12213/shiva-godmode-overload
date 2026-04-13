@@ -2,24 +2,25 @@
 import json
 import os
 import urllib.request
+import urllib.parse
 from http.server import BaseHTTPRequestHandler
 
-UPSTASH_URL = os.environ.get("UPSTASH_REDIS_REST_URL", "https://growing-crow-80382.upstash.io")
-UPSTASH_TOKEN = os.environ.get("UPSTASH_REDIS_REST_TOKEN", "gQAAAAAAATn-AAIncDJlNjdjM2M4OTQzOTg0OGRhYjE3MzRjNjNhM2U1ZDUzNnAyODAzODI")
+UPSTASH_URL = "https://growing-crow-80382.upstash.io"
+UPSTASH_TOKEN = "gQAAAAAAATn-AAIncDJlNjdjM2M4OTQzOTg0OGRhYjE3MzRjNjNhM2U1ZDUzNnAyODAzODI"
 
 
 def upstash_get(key):
-    if not UPSTASH_URL or not UPSTASH_TOKEN:
-        return None
     try:
+        encoded_key = urllib.parse.quote(key, safe='')
         req = urllib.request.Request(
-            f"{UPSTASH_URL}/get/{key}",
+            f"{UPSTASH_URL}/get/{encoded_key}",
             headers={"Authorization": f"Bearer {UPSTASH_TOKEN}"}
         )
         with urllib.request.urlopen(req, timeout=5) as resp:
             data = json.loads(resp.read().decode())
             return data.get("result")
-    except Exception:
+    except Exception as e:
+        print(f"upstash_get error for {key}: {e}")
         return None
 
 

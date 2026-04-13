@@ -11,11 +11,11 @@
     }
   ],
   "routes": [
-    { "src": "/api/status", "dest": "/api/status.py" },
-    { "src": "/api/trades", "dest": "/api/trades.py" },
-    { "src": "/api/log", "dest": "/api/log.py" },
-    { "src": "/api/agents", "dest": "/api/agents.py" },
-    { "src": "/api/config", "dest": "/api/config.py" },
-    { "src": "/(.*)", "dest": "/index.html" }
+    { "src": "/api/status", "dest": "/api/status.py", "headers": { "Cache-Control": "no-cache" } },
+    { "src": "/api/trades", "dest": "/api/trades.py", "headers": { "Cache-Control": "no-cache" } },
+    { "src": "/api/log", "dest": "/api/log.py", "headers": { "Cache-Control": "no-cache" } },
+    { "src": "/api/agents", "dest": "/api/agents.py", "headers": { "Cache-Control": "no-cache" } },
+    { "src": "/api/config", "dest": "/api/config.py", "headers": { "Cache-Control": "no-cache" } },
+    { "src": "/(.*)", "dest": "/index.html", "headers": { "Cache-Control": "no-cache, no-store, must-revalidate" } }
   ]
 }

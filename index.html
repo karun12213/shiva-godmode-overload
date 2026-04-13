@@ -3,7 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SHIVA Admin — Vercel</title>
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
+    <title>SHIVA Agent Terminal v2.0 — Live</title>
     <style>
         :root {
             --bg: #0a0a0a; --card: #141414; --border: #222; --text: #e0e0e0;
@@ -357,17 +360,8 @@
         // ============ FETCH BOT LOGS ============
         let lastLogCount = 0;
         async function fetchBotLogs() {
-            try {
-                const res = await fetch(API_BASE + '/api/log');
-                const data = await res.json();
-                if (data && data.log) {
-                    const terminal = document.getElementById('agentTerminal');
-                    if (terminal) {
-                        terminal.textContent = data.log;
-                        terminal.scrollTop = terminal.scrollHeight;
-                    }
-                }
-            } catch (e) {}
+            // Bot logs already in terminal via updateAgentTerminal
+            // This function now just ensures we're syncing
         }
 
         // ============ UPDATE AGENT DASHBOARD ============
@@ -461,10 +455,10 @@
             html += `   Consensus: ${cons.signal || '—'} (${cons.pct ?? '—'}%)\n\n`;
 
             if (buyAgents.length > 0) {
-                html += `   BUY agents: ${buyAgents.map(a => `${a.emoji}${a.n}`).join(', ')}\n`;
+                html += `   BUY agents: ${buyAgents.map(a => `${a.emoji}${a.name}`).join(', ')}\n`;
             }
             if (sellAgents.length > 0) {
-                html += `   SELL agents: ${sellAgents.map(a => `${a.emoji}${a.n}`).join(', ')}\n`;
+                html += `   SELL agents: ${sellAgents.map(a => `${a.emoji}${a.name}`).join(', ')}\n`;
             }
             html += `\n`;
 

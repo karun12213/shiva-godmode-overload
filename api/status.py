@@ -1,6 +1,7 @@
 """SHIVA Status API — Hardcoded Upstash credentials"""
 import json
 import urllib.request
+import urllib.parse
 from http.server import BaseHTTPRequestHandler
 
 UPSTASH_URL = "https://growing-crow-80382.upstash.io"
@@ -9,8 +10,9 @@ UPSTASH_TOKEN = "gQAAAAAAATn-AAIncDJlNjdjM2M4OTQzOTg0OGRhYjE3MzRjNjNhM2U1ZDUzNnA
 
 def upstash_get(key):
     try:
+        encoded_key = urllib.parse.quote(key, safe='')
         req = urllib.request.Request(
-            f"{UPSTASH_URL}/get/{key}",
+            f"{UPSTASH_URL}/get/{encoded_key}",
             headers={"Authorization": f"Bearer {UPSTASH_TOKEN}"}
         )
         with urllib.request.urlopen(req, timeout=5) as resp:
