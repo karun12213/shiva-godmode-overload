@@ -8,8 +8,8 @@ import urllib.error
 from http.server import BaseHTTPRequestHandler
 from datetime import datetime, timezone
 
-UPSTASH_URL = os.environ.get("UPSTASH_REDIS_REST_URL")
-UPSTASH_TOKEN = os.environ.get("UPSTASH_REDIS_REST_TOKEN")
+UPSTASH_URL = os.environ.get("UPSTASH_REDIS_REST_URL", "https://growing-crow-80382.upstash.io")
+UPSTASH_TOKEN = os.environ.get("UPSTASH_REDIS_REST_TOKEN", "gQAAAAAAATn-AAIncDJlNjdjM2M4OTQzOTg0OGRhYjE3MzRjNjNhM2U1ZDUzNnAyODAzODI")
 
 
 def upstash_get(key):
